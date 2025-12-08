@@ -18,7 +18,8 @@
                             sand: '#F4EBD0',
                             teal: '#4ECDC4',
                             dark: '#1A535C',
-                            pink: '#FF9F9F'
+                            pink: '#FF9F9F',
+                            rain: '#64748b'
                         }
                     },
                     fontFamily: {
@@ -46,25 +47,99 @@
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
 
+        .nav-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            background-color: #eff6ff;
+            color: #2563eb;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border-radius: 9999px;
+            transition: all 0.2s;
+            border: 1px solid #dbeafe;
+            text-decoration: none;
+            margin-top: 4px;
+            margin-bottom: 4px;
+        }
+        .nav-btn:hover {
+            background-color: #2563eb;
+            color: white;
+            transform: translateY(-1px);
+        }
+
         .gps-tag {
             font-family: monospace;
             font-size: 0.75rem;
-            background-color: #f1f5f9;
-            color: #475569;
-            padding: 2px 6px;
-            border-radius: 4px;
-            border: 1px solid #e2e8f0;
-            display: inline-block;
-            margin-top: 4px;
+            color: #64748b;
+            margin-left: 2px;
         }
         
-        /* 航班資訊卡片樣式 */
         .flight-card {
             background: #f8fafc;
             border-left: 4px solid #00A3E0;
             padding: 10px;
             margin-bottom: 10px;
             font-size: 0.9rem;
+        }
+
+        /* 雨天模式相關樣式 */
+        .rainy-option {
+            display: none; /* 預設隱藏雨備 */
+            border-left: 4px solid #64748b !important;
+            background-color: #f8fafc;
+        }
+        
+        /* 當 body 有 .rain-mode 時 */
+        body.rain-mode .sunny-only {
+            display: none !important;
+        }
+        body.rain-mode .rainy-option {
+            display: flex !important;
+            animation: fadeIn 0.5s;
+        }
+        
+        /* 開關按鈕樣式 */
+        .weather-switch {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            background-color: #e2e8f0;
+            border-radius: 9999px;
+            padding: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .weather-switch.active {
+            background-color: #64748b; /* 雨天深灰藍 */
+        }
+        .weather-knob {
+            width: 32px;
+            height: 32px;
+            background-color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .weather-switch.active .weather-knob {
+            transform: translateX(40px);
+        }
+        
+        /* 備選行程標籤 */
+        .backup-badge {
+            background-color: #dcfce7;
+            color: #166534;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            border: 1px solid #bbf7d0;
+            margin-left: 6px;
+            vertical-align: middle;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -74,12 +149,13 @@
     <header class="bg-gradient-to-r from-okinawa-blue to-okinawa-teal text-white shadow-lg sticky top-0 z-50">
         <div class="container mx-auto px-4 py-4 flex justify-between items-center">
             <div class="flex items-center gap-2">
-                <i class="fa-solid fa-plane text-2xl"></i>
+                <i class="fa-solid fa-car-side text-2xl"></i>
                 <div>
                     <h1 class="text-xl md:text-2xl font-bold tracking-wide leading-tight">沖繩親子自駕</h1>
                     <p class="text-xs opacity-90">Dec 16 - Dec 20, 2025</p>
                 </div>
             </div>
+            
             <nav class="hidden md:block">
                 <ul class="flex gap-6 text-sm font-medium">
                     <li><a href="#" onclick="showSection('trip')" class="hover:text-okinawa-sand transition">行程總覽</a></li>
@@ -94,9 +170,8 @@
 
     <!-- Hero Banner -->
     <div class="relative w-full h-64 md:h-80 bg-gray-300 overflow-hidden group">
-        <!-- 替換為飛機視角或沖繩藍天 -->
-        <img src="https://images.unsplash.com/photo-1540206351-d6465b3ac5c1?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80" 
-             alt="Okinawa Sky" 
+        <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80" 
+             alt="Okinawa Beach" 
              class="w-full h-full object-cover transition duration-700 group-hover:scale-105">
         <div class="absolute inset-0 bg-black/30 flex flex-col justify-center items-center text-white p-4 text-center">
             <h2 class="text-3xl md:text-5xl font-bold mb-2 shadow-sm">恩納度假 x 南部探險</h2>
@@ -107,17 +182,33 @@
     <!-- Main Content -->
     <main class="container mx-auto px-4 py-8 -mt-8 relative z-10">
 
-        <!-- Tabs -->
-        <div class="bg-white rounded-xl shadow-lg p-2 mb-8 flex flex-wrap justify-center gap-2 overflow-x-auto">
-            <button onclick="switchTab('day1')" id="btn-day1" class="tab-btn px-4 py-2 rounded-lg text-sm font-bold bg-okinawa-blue text-white transition min-w-[100px]">Day 1<br><span class="text-xs font-normal">12/16 抵達</span></button>
-            <button onclick="switchTab('day2')" id="btn-day2" class="tab-btn px-4 py-2 rounded-lg text-sm font-bold text-gray-500 hover:bg-slate-100 transition min-w-[100px]">Day 2<br><span class="text-xs font-normal">12/17 北部</span></button>
-            <button onclick="switchTab('day3')" id="btn-day3" class="tab-btn px-4 py-2 rounded-lg text-sm font-bold text-gray-500 hover:bg-slate-100 transition min-w-[100px]">Day 3<br><span class="text-xs font-normal">12/18 移動</span></button>
-            <button onclick="switchTab('day4')" id="btn-day4" class="tab-btn px-4 py-2 rounded-lg text-sm font-bold text-gray-500 hover:bg-slate-100 transition min-w-[100px]">Day 4<br><span class="text-xs font-normal">12/19 南部</span></button>
-            <button onclick="switchTab('day5')" id="btn-day5" class="tab-btn px-4 py-2 rounded-lg text-sm font-bold text-gray-500 hover:bg-slate-100 transition min-w-[100px]">Day 5<br><span class="text-xs font-normal">12/20 返家</span></button>
-            <div class="w-px h-10 bg-gray-200 mx-2 hidden md:block"></div>
-            <button onclick="switchTab('packing')" id="btn-packing" class="tab-btn px-4 py-2 rounded-lg text-sm font-bold text-okinawa-dark border-2 border-okinawa-teal hover:bg-okinawa-teal hover:text-white transition flex items-center gap-2">
-                <i class="fa-solid fa-suitcase"></i> 行前/物流
-            </button>
+        <!-- Controls Area: Tabs + Weather Toggle -->
+        <div class="bg-white rounded-xl shadow-lg p-4 mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            
+            <!-- Tabs -->
+            <div class="flex flex-wrap justify-center gap-2 overflow-x-auto w-full md:w-auto">
+                <button onclick="switchTab('day1')" id="btn-day1" class="tab-btn px-4 py-2 rounded-lg text-sm font-bold bg-okinawa-blue text-white transition min-w-[90px]">Day 1<br><span class="text-xs font-normal">抵達</span></button>
+                <button onclick="switchTab('day2')" id="btn-day2" class="tab-btn px-4 py-2 rounded-lg text-sm font-bold text-gray-500 hover:bg-slate-100 transition min-w-[90px]">Day 2<br><span class="text-xs font-normal">北部</span></button>
+                <button onclick="switchTab('day3')" id="btn-day3" class="tab-btn px-4 py-2 rounded-lg text-sm font-bold text-gray-500 hover:bg-slate-100 transition min-w-[90px]">Day 3<br><span class="text-xs font-normal">移動</span></button>
+                <button onclick="switchTab('day4')" id="btn-day4" class="tab-btn px-4 py-2 rounded-lg text-sm font-bold text-gray-500 hover:bg-slate-100 transition min-w-[90px]">Day 4<br><span class="text-xs font-normal">南部</span></button>
+                <button onclick="switchTab('day5')" id="btn-day5" class="tab-btn px-4 py-2 rounded-lg text-sm font-bold text-gray-500 hover:bg-slate-100 transition min-w-[90px]">Day 5<br><span class="text-xs font-normal">返家</span></button>
+                <div class="w-px h-10 bg-gray-200 mx-2 hidden md:block"></div>
+                <button onclick="switchTab('packing')" id="btn-packing" class="tab-btn px-4 py-2 rounded-lg text-sm font-bold text-okinawa-dark border-2 border-okinawa-teal hover:bg-okinawa-teal hover:text-white transition flex items-center gap-2">
+                    <i class="fa-solid fa-list-check"></i> <span class="hidden md:inline">清單</span>
+                </button>
+            </div>
+
+            <!-- Weather Toggle -->
+            <div class="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-full border border-slate-200">
+                <span class="text-sm font-bold text-orange-400"><i class="fa-solid fa-sun"></i> 晴天</span>
+                <div class="weather-switch" onclick="toggleWeather()" id="weatherSwitch">
+                    <div class="weather-knob">
+                        <i class="fa-solid fa-sun text-orange-400" id="weatherIcon"></i>
+                    </div>
+                    <div style="width: 40px;"></div> <!-- Spacer -->
+                </div>
+                <span class="text-sm font-bold text-slate-500"><i class="fa-solid fa-umbrella"></i> 雨備</span>
+            </div>
         </div>
 
         <div id="content-area" class="min-h-[500px]">
@@ -126,91 +217,85 @@
             <div id="day1" class="tab-content fade-in">
                 <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
                     <div class="bg-okinawa-blue text-white p-4">
-                        <h3 class="text-xl font-bold"><i class="fa-solid fa-plane-arrival mr-2"></i>Day 1: 抵達、寶可夢與恩納之夜</h3>
-                        <p class="opacity-90 text-sm mt-1">12/16 (二) | 住宿：恩納村 4LDK 民宿</p>
+                        <h3 class="text-xl font-bold"><i class="fa-solid fa-plane-arrival mr-2"></i>Day 1: 抵達、超市補給與恩納</h3>
                     </div>
                     <div class="p-6 space-y-8">
                         
-                        <!-- Flight Info -->
+                        <!-- Flight -->
                         <div class="flight-card rounded-md">
                             <div class="flex justify-between items-center">
-                                <div>
-                                    <span class="font-bold text-okinawa-dark"><i class="fa-solid fa-plane-departure"></i> JX870 星宇航空</span>
-                                    <div class="text-xs text-gray-600">TPE (11:40) ➔ OKA (14:15 當地時間)</div>
-                                </div>
-                                <div class="text-right text-xs text-gray-500">桃園 T1</div>
+                                <div><span class="font-bold text-okinawa-dark"><i class="fa-solid fa-plane-departure"></i> JX870 星宇</span> TPE 11:40 ➔ OKA 14:15</div>
                             </div>
                         </div>
 
                         <!-- 14:15 -->
                         <div class="flex flex-col md:flex-row gap-4 border-l-4 border-gray-200 pl-4">
-                            <div class="md:w-1/4 flex flex-col">
-                                <span class="text-2xl font-bold text-okinawa-dark">14:15</span>
-                                <span class="text-gray-500 text-sm">那霸機場</span>
-                            </div>
-                            <div class="md:w-3/4">
-                                <h4 class="text-lg font-bold mb-1">抵達沖繩</h4>
-                                <p class="text-gray-600">入境手續、領取行李。前往 OTS 接駁車站點等待接駁。</p>
-                            </div>
+                            <div class="md:w-1/4 flex flex-col"><span class="text-2xl font-bold text-okinawa-dark">14:15</span><span class="text-gray-500 text-sm">那霸機場</span></div>
+                            <div class="md:w-3/4"><h4 class="text-lg font-bold">抵達沖繩</h4><p class="text-gray-600">入境、領行李，搭乘 OTS 接駁車。</p></div>
                         </div>
 
                         <!-- 17:00 -->
                         <div class="flex flex-col md:flex-row gap-4 border-l-4 border-red-400 pl-4">
-                            <div class="md:w-1/4 flex flex-col">
-                                <span class="text-2xl font-bold text-okinawa-dark">17:00</span>
-                                <span class="text-gray-500 text-sm">OTS 臨空豐崎</span>
-                            </div>
+                            <div class="md:w-1/4 flex flex-col"><span class="text-2xl font-bold text-okinawa-dark">17:00</span><span class="text-gray-500 text-sm">OTS 取車</span></div>
                             <div class="md:w-3/4">
-                                <h4 class="text-lg font-bold mb-1">取車 (Car Rental Pickup)</h4>
-                                <p class="text-gray-600 mb-2">預計 17:00 辦理取車手續。檢查車況、安裝兒童座椅。</p>
-                                <div class="bg-yellow-50 p-2 rounded text-sm text-yellow-800 border border-yellow-100">
-                                    <i class="fa-solid fa-triangle-exclamation"></i> <strong>導航設定：</strong> 第一站先設 Aeon Rycom。
-                                </div>
+                                <h4 class="text-lg font-bold">OTS 臨空豐崎營業所</h4>
+                                <a href="https://www.google.com/maps/search/?api=1&query=OTS+Rent-a-car+Rinku+Toyosaki" target="_blank" class="nav-btn"><i class="fa-solid fa-location-arrow"></i> 導航</a>
+                                <p class="text-gray-600">取車、安裝兒童座椅。設定導航至 Aeon Rycom。</p>
                             </div>
                         </div>
 
-                        <!-- 18:00 -->
+                        <!-- 18:00 (室內，無須雨備) -->
                         <div class="flex flex-col md:flex-row gap-4 border-l-4 border-purple-500 pl-4">
+                            <div class="md:w-1/4 flex flex-col"><span class="text-2xl font-bold text-okinawa-dark">18:00</span><span class="text-gray-500 text-sm">Aeon Rycom</span></div>
+                            <div class="md:w-3/4">
+                                <h4 class="text-lg font-bold">Aeon Mall Rycom (晚餐/寶可夢)</h4>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Aeon+Mall+Okinawa+Rycom" target="_blank" class="nav-btn"><i class="fa-solid fa-location-arrow"></i> 導航</a>
+                                <p class="text-gray-600">室內行程不受雨天影響。必逛 1F Pokemon Center。</p>
+                            </div>
+                        </div>
+
+                        <!-- 20:00 (有雨備) -->
+                        <div class="flex flex-col md:flex-row gap-4 border-l-4 border-yellow-400 pl-4 sunny-only">
+                            <div class="md:w-1/4 flex flex-col"><span class="text-2xl font-bold text-okinawa-dark">20:00</span><span class="text-gray-500 text-sm">美國村</span></div>
+                            <div class="md:w-3/4">
+                                <h4 class="text-lg font-bold">美國村聖誕燈飾 (戶外)</h4>
+                                <a href="https://www.google.com/maps/search/?api=1&query=American+Village+Okinawa" target="_blank" class="nav-btn"><i class="fa-solid fa-location-arrow"></i> 導航</a>
+                                <p class="text-gray-600">感受戶外聖誕燈飾氛圍。</p>
+                                <img src="https://visitokinawajapan.com/wp-content/uploads/2021/11/ev160_02_american-village-illumination.webp" class="rounded-lg object-cover w-full h-128 card-shadow mt-2">
+                            </div>
+                        </div>
+
+                        <!-- 20:00 雨備 -->
+                        <div class="flex flex-col md:flex-row gap-4 pl-4 rainy-option">
+                            <div class="md:w-1/4 flex flex-col"><span class="text-2xl font-bold text-slate-500">20:00</span><span class="text-gray-500 text-sm">雨天備案</span></div>
+                            <div class="md:w-3/4">
+                                <h4 class="text-lg font-bold text-slate-600"><i class="fa-solid fa-umbrella mr-2"></i>改為車遊或取消</h4>
+                                <p class="text-gray-600">若雨勢過大，建議直接前往超市補給後入住民宿。</p>
+                            </div>
+                        </div>
+
+                        <!-- 21:00 超市補給 -->
+                        <div class="flex flex-col md:flex-row gap-4 border-l-4 border-orange-500 pl-4">
                             <div class="md:w-1/4 flex flex-col">
-                                <span class="text-2xl font-bold text-okinawa-dark">18:00</span>
-                                <span class="text-gray-500 text-sm">北中城村</span>
-                                <span class="gps-tag">Mapcode: 33 530 406*45</span>
+                                <span class="text-2xl font-bold text-okinawa-dark">21:00</span>
+                                <span class="text-gray-500 text-sm">石川/恩納</span>
                             </div>
                             <div class="md:w-3/4">
-                                <h4 class="text-lg font-bold mb-1">Aeon Mall Rycom (晚餐 & 寶可夢)</h4>
-                                <p class="text-gray-600 mb-2">前往住宿點的中途大站。
-                                    <br>1. <strong>晚餐：</strong> 美食街選擇多。
-                                    <br>2. <strong>Pokemon Center：</strong> 位於 1F，必逛！
+                                <h4 class="text-lg font-bold mb-1">San-A Ishikawa City (食材補給)</h4>
+                                <a href="https://maps.app.goo.gl/t2PN8nWf2VXcxgR19" target="_blank" class="nav-btn"><i class="fa-solid fa-location-arrow"></i> 導航</a>
+                                <p class="text-gray-600 mt-2">
+                                    <span class="bg-orange-100 text-orange-700 px-1 text-xs rounded">新增補給點</span>
+                                    大型超市 San-A，停車方便。在此採買這兩天的早餐、BBQ 食材與飲料。
                                 </p>
-                                <img src="https://images.unsplash.com/photo-1612454652432-8494ba689f25?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=60" class="rounded-lg object-cover w-full h-32 md:h-40 card-shadow" alt="Shopping Mall">
                             </div>
                         </div>
 
-                        <!-- 20:00 -->
-                        <div class="flex flex-col md:flex-row gap-4 border-l-4 border-yellow-400 pl-4">
-                            <div class="md:w-1/4 flex flex-col">
-                                <span class="text-2xl font-bold text-okinawa-dark">20:00</span>
-                                <span class="text-gray-500 text-sm">美國村</span>
-                            </div>
-                            <div class="md:w-3/4">
-                                <h4 class="text-lg font-bold mb-1">美國村聖誕燈飾 (Light Show)</h4>
-                                <p class="text-gray-600 mb-2">順路經過北谷町，感受聖誕氛圍燈飾。若小孩太累可改為車遊或直接前往民宿。</p>
-                                <img src="https://images.unsplash.com/photo-1577032742456-11f8792036c8?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=60" class="rounded-lg object-cover w-full h-32 md:h-40 card-shadow" alt="Christmas Lights">
-                            </div>
-                        </div>
-
-                        <!-- 21:30 -->
+                        <!-- Check-in -->
                         <div class="flex flex-col md:flex-row gap-4 border-l-4 border-indigo-600 pl-4">
-                            <div class="md:w-1/4 flex flex-col">
-                                <span class="text-2xl font-bold text-okinawa-dark">21:30</span>
-                                <span class="text-gray-500 text-sm">恩納村</span>
-                            </div>
+                            <div class="md:w-1/4 flex flex-col"><span class="text-2xl font-bold text-okinawa-dark">21:30</span><span class="text-gray-500 text-sm">恩納村</span></div>
                             <div class="md:w-3/4">
-                                <h4 class="text-lg font-bold mb-1">Check-in: 恩納 8A 新築民宿</h4>
-                                <p class="text-gray-600 mb-2">4LDK 泳池別墅，好好休息。</p>
-                                <a href="https://maps.app.goo.gl/a9SjA4crt8GXkVQv5" target="_blank" class="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline">
-                                    <i class="fa-solid fa-location-dot"></i> Google Maps 導航
-                                </a>
+                                <h4 class="text-lg font-bold">Check-in: 恩納 8A 新築民宿</h4>
+                                <a href="https://maps.app.goo.gl/a9SjA4crt8GXkVQv5" target="_blank" class="nav-btn"><i class="fa-solid fa-house"></i> 導航</a>
                             </div>
                         </div>
                     </div>
@@ -222,58 +307,58 @@
                 <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
                     <div class="bg-okinawa-teal text-white p-4">
                         <h3 class="text-xl font-bold"><i class="fa-solid fa-fish mr-2"></i>Day 2: 北部海洋與森林</h3>
-                        <p class="opacity-90 text-sm mt-1">12/17 (三) | 住宿：恩納村 4LDK 民宿</p>
                     </div>
                     <div class="p-6 space-y-8">
                         <!-- 10:00 -->
                         <div class="flex flex-col md:flex-row gap-4 border-l-4 border-okinawa-blue pl-4">
-                            <div class="md:w-1/4 flex flex-col">
-                                <span class="text-2xl font-bold text-okinawa-dark">10:00</span>
-                                <span class="text-gray-500 text-sm">海洋博公園</span>
-                                <span class="gps-tag">Mapcode: 553 075 797*77</span>
-                            </div>
+                            <div class="md:w-1/4 flex flex-col"><span class="text-2xl font-bold text-okinawa-dark">10:00</span><span class="text-gray-500 text-sm">海洋博公園</span></div>
                             <div class="md:w-3/4">
-                                <h4 class="text-lg font-bold mb-1">美麗海水族館 (Churaumi)</h4>
-                                <p class="text-gray-600 mb-2">必看海豚劇場(戶外)與黑潮之海餵食秀。</p>
-                                <img src="https://images.unsplash.com/photo-1583212235753-b254a34f9503?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=60" class="rounded-lg object-cover w-full h-32 md:h-48 card-shadow" alt="Aquarium">
+                                <h4 class="text-lg font-bold">美麗海水族館 (室內為主)</h4>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Okinawa+Churaumi+Aquarium" target="_blank" class="nav-btn"><i class="fa-solid fa-location-arrow"></i> 導航</a>
+                                <p class="text-gray-600">水族館本體為室內，雨天不受影響。海豚劇場有遮雨棚。</p>
+                                <img src="https://www.tabirai.net//tabirai-uploader/img/0002561/s1_0002561.jpg" class="rounded-lg object-cover w-full h-32 md:h-48 card-shadow mt-2">
                             </div>
                         </div>
 
-                        <!-- 13:00 -->
-                        <div class="flex flex-col md:flex-row gap-4 border-l-4 border-green-200 pl-4">
-                            <div class="md:w-1/4 flex flex-col">
-                                <span class="text-2xl font-bold text-okinawa-dark">13:00</span>
-                                <span class="text-gray-500 text-sm">備瀨</span>
-                            </div>
+                        <!-- 13:00 (晴天) -->
+                        <div class="flex flex-col md:flex-row gap-4 border-l-4 border-green-200 pl-4 sunny-only">
+                            <div class="md:w-1/4 flex flex-col"><span class="text-2xl font-bold text-okinawa-dark">13:00</span><span class="text-gray-500 text-sm">備瀨</span></div>
                             <div class="md:w-3/4">
-                                <h4 class="text-lg font-bold mb-1">備瀨福木林道</h4>
-                                <p class="text-gray-600">在林道入口處用餐。下午可在林道散步或騎親子腳踏車。</p>
+                                <h4 class="text-lg font-bold">備瀨福木林道 (戶外散步)</h4>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Bise+Fukugi+Tree+Road" target="_blank" class="nav-btn"><i class="fa-solid fa-location-arrow"></i> 導航</a>
+                                <p class="text-gray-600">騎腳踏車或散步。</p>
                             </div>
                         </div>
 
-                        <!-- 15:30 -->
-                        <div class="flex flex-col md:flex-row gap-4 border-l-4 border-okinawa-blue pl-4">
-                            <div class="md:w-1/4 flex flex-col">
-                                <span class="text-2xl font-bold text-okinawa-dark">15:30</span>
-                                <span class="text-gray-500 text-sm">古宇利島</span>
-                            </div>
+                         <!-- 13:00 雨備 -->
+                         <div class="flex flex-col md:flex-row gap-4 pl-4 rainy-option">
+                            <div class="md:w-1/4 flex flex-col"><span class="text-2xl font-bold text-slate-500">13:00</span><span class="text-gray-500 text-sm">雨天備案</span></div>
                             <div class="md:w-3/4">
-                                <h4 class="text-lg font-bold mb-1">古宇利大橋 & 蝦蝦飯</h4>
-                                <p class="text-gray-600">開車兜風。若時間充裕可去心形岩，或直接買 Shrimp Wagon 回車上吃。</p>
+                                <h4 class="text-lg font-bold text-slate-600"><i class="fa-solid fa-beer-mug-empty mr-2"></i>Orion 啤酒工廠 或 名護博物館</h4>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Orion+Happy+Park" target="_blank" class="nav-btn bg-slate-100 text-slate-600 border-slate-300"><i class="fa-solid fa-location-arrow"></i> 導航</a>
                             </div>
                         </div>
 
-                        <!-- 18:00 -->
-                        <div class="flex flex-col md:flex-row gap-4 border-l-4 border-gray-200 pl-4">
-                            <div class="md:w-1/4 flex flex-col">
-                                <span class="text-2xl font-bold text-okinawa-dark">18:00</span>
-                                <span class="text-gray-500 text-sm">恩納村</span>
-                            </div>
+                        <!-- 15:30 (晴天) -->
+                        <div class="flex flex-col md:flex-row gap-4 border-l-4 border-okinawa-blue pl-4 sunny-only">
+                            <div class="md:w-1/4 flex flex-col"><span class="text-2xl font-bold text-okinawa-dark">15:30</span><span class="text-gray-500 text-sm">古宇利島</span></div>
                             <div class="md:w-3/4">
-                                <h4 class="text-lg font-bold mb-1">民宿 BBQ 或附近居酒屋</h4>
-                                <p class="text-gray-600">回到恩納村。可利用民宿 BBQ 設施，或在附近的「琉球之牛」(需預約) 用餐。</p>
+                                <h4 class="text-lg font-bold">古宇利大橋 & 沙灘</h4>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Kouri+Shrimp" target="_blank" class="nav-btn"><i class="fa-solid fa-location-arrow"></i> 導航</a>
+                                <p class="text-gray-600">戶外拍照與買蝦蝦飯。</p>
                             </div>
                         </div>
+
+                         <!-- 15:30 雨備 -->
+                         <div class="flex flex-col md:flex-row gap-4 pl-4 rainy-option">
+                            <div class="md:w-1/4 flex flex-col"><span class="text-2xl font-bold text-slate-500">15:30</span><span class="text-gray-500 text-sm">雨天備案</span></div>
+                            <div class="md:w-3/4">
+                                <h4 class="text-lg font-bold text-slate-600"><i class="fa-solid fa-tower-observation mr-2"></i>古宇利海洋塔 (Ocean Tower)</h4>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Kouri+Ocean+Tower" target="_blank" class="nav-btn bg-slate-100 text-slate-600 border-slate-300"><i class="fa-solid fa-location-arrow"></i> 導航</a>
+                                <p class="text-gray-600">搭乘無人車上塔，室內展望台看風景，不會淋雨。</p>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -283,63 +368,57 @@
                 <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
                     <div class="bg-orange-400 text-white p-4">
                         <h3 class="text-xl font-bold"><i class="fa-solid fa-car-side mr-2"></i>Day 3: 往南移動與鳳梨園</h3>
-                        <p class="opacity-90 text-sm mt-1">12/18 (四) | 住宿：糸滿無人島 BBQ 民宿</p>
                     </div>
                     <div class="p-6 space-y-8">
-                        
                         <div class="bg-red-50 p-3 rounded-lg border border-red-100 text-sm text-red-800 mb-4">
-                            <i class="fa-solid fa-suitcase"></i> <strong>Check-out 提醒：</strong> 10:00 前退房，行李全部上車。
+                            <i class="fa-solid fa-suitcase"></i> <strong>Check-out 提醒：</strong> 10:00 前退房。
                         </div>
 
                         <!-- 10:30 -->
                         <div class="flex flex-col md:flex-row gap-4 border-l-4 border-yellow-400 pl-4">
-                            <div class="md:w-1/4 flex flex-col">
-                                <span class="text-2xl font-bold text-okinawa-dark">10:30</span>
-                                <span class="text-gray-500 text-sm">名護</span>
-                            </div>
+                            <div class="md:w-1/4 flex flex-col"><span class="text-2xl font-bold text-okinawa-dark">10:30</span><span class="text-gray-500 text-sm">名護</span></div>
                             <div class="md:w-3/4">
-                                <h4 class="text-lg font-bold mb-1">名護鳳梨園 (Nago Pineapple Park)</h4>
-                                <p class="text-gray-600 mb-2">🍍 <strong>2歲最愛！</strong> 搭乘自動駕駛鳳梨車與恐龍探險。</p>
-                                <img src="https://images.unsplash.com/photo-1589820296156-2454bb8a4d50?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=60" class="rounded-lg object-cover w-full h-32 md:h-40 card-shadow" alt="Pineapple">
+                                <h4 class="text-lg font-bold">名護鳳梨園 (半室內)</h4>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Nago+Pineapple+Park" target="_blank" class="nav-btn"><i class="fa-solid fa-location-arrow"></i> 導航</a>
+                                <p class="text-gray-600">鳳梨車有頂棚，園區大部分有遮蔽。</p>
                             </div>
                         </div>
 
-                        <!-- 13:00 -->
-                        <div class="flex flex-col md:flex-row gap-4 border-l-4 border-gray-200 pl-4">
-                            <div class="md:w-1/4 flex flex-col">
-                                <span class="text-2xl font-bold text-okinawa-dark">13:00</span>
-                                <span class="text-gray-500 text-sm">萬座毛</span>
-                            </div>
+                        <!-- 13:00 (晴天) -->
+                        <div class="flex flex-col md:flex-row gap-4 border-l-4 border-gray-200 pl-4 sunny-only">
+                            <div class="md:w-1/4 flex flex-col"><span class="text-2xl font-bold text-okinawa-dark">13:00</span><span class="text-gray-500 text-sm">萬座毛</span></div>
                             <div class="md:w-3/4">
-                                <h4 class="text-lg font-bold mb-1">萬座毛 & 午餐</h4>
-                                <p class="text-gray-600">簡單停留拍照。隨後沿著國道 58 號往南行駛。</p>
+                                <h4 class="text-lg font-bold">萬座毛 (戶外步道)</h4>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Manzamo" target="_blank" class="nav-btn"><i class="fa-solid fa-location-arrow"></i> 導航</a>
                             </div>
                         </div>
 
-                        <!-- 15:30 -->
-                        <div class="flex flex-col md:flex-row gap-4 border-l-4 border-pink-400 pl-4">
-                            <div class="md:w-1/4 flex flex-col">
-                                <span class="text-2xl font-bold text-okinawa-dark">15:30</span>
-                                <span class="text-gray-500 text-sm">浦添/那霸</span>
-                            </div>
+                        <!-- 13:00 雨備 -->
+                        <div class="flex flex-col md:flex-row gap-4 pl-4 rainy-option">
+                            <div class="md:w-1/4 flex flex-col"><span class="text-2xl font-bold text-slate-500">13:00</span><span class="text-gray-500 text-sm">雨天備案</span></div>
                             <div class="md:w-3/4">
-                                <h4 class="text-lg font-bold mb-1">Birthday 港川店 (若 Day 1 沒逛到)</h4>
-                                <p class="text-gray-600">如果第一天太趕，可安排今天補貨嬰幼兒用品。</p>
+                                <h4 class="text-lg font-bold text-slate-600"><i class="fa-solid fa-store mr-2"></i>御菓子御殿 或 玻璃工房</h4>
+                                <p class="text-gray-600">改去恩納店買伴手禮，或參加室內玻璃DIY體驗。</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Day 3 備選行程：沖縄県総合運動公園 -->
+                        <div class="flex flex-col md:flex-row gap-4 border-l-4 border-gray-300 pl-4 bg-slate-50 p-2 rounded-r sunny-only">
+                            <div class="md:w-1/4 flex flex-col"><span class="text-2xl font-bold text-gray-500">備選</span><span class="text-gray-500 text-sm">沖繩市</span></div>
+                            <div class="md:w-3/4">
+                                <h4 class="text-lg font-bold text-gray-700">沖縄県総合運動公園 <span class="backup-badge">親子推薦</span></h4>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Okinawa+Comprehensive+Athletic+Park" target="_blank" class="nav-btn bg-white border-gray-300 text-gray-600"><i class="fa-solid fa-location-arrow"></i> 導航</a>
+                                <p class="text-gray-600 mt-1 text-sm">擁有超長溜滑梯與大型遊具，適合放電。</p>
+                                <img src="https://images.unsplash.com/photo-1545558014-8692077e9b5c?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=60" class="rounded-lg object-cover w-full h-24 card-shadow mt-2">
                             </div>
                         </div>
 
-                        <!-- 17:30 -->
-                        <div class="flex flex-col md:flex-row gap-4 border-l-4 border-indigo-600 pl-4">
-                            <div class="md:w-1/4 flex flex-col">
-                                <span class="text-2xl font-bold text-okinawa-dark">17:30</span>
-                                <span class="text-gray-500 text-sm">糸滿市</span>
-                            </div>
+                         <!-- 17:30 Check in -->
+                         <div class="flex flex-col md:flex-row gap-4 border-l-4 border-indigo-600 pl-4">
+                            <div class="md:w-1/4 flex flex-col"><span class="text-2xl font-bold text-okinawa-dark">17:30</span><span class="text-gray-500 text-sm">糸滿</span></div>
                             <div class="md:w-3/4">
-                                <h4 class="text-lg font-bold mb-1">Check-in: 糸滿無人島 BBQ 民宿</h4>
-                                <p class="text-gray-600 mb-2">位於南部糸滿，空間大且有兒童車庫。</p>
-                                <a href="https://maps.app.goo.gl/uefKJsDAknfhCiSw7" target="_blank" class="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline">
-                                    <i class="fa-solid fa-location-dot"></i> Google Maps 導航
-                                </a>
+                                <h4 class="text-lg font-bold">Check-in: 糸滿無人島 BBQ 民宿</h4>
+                                <a href="https://maps.app.goo.gl/uefKJsDAknfhCiSw7" target="_blank" class="nav-btn"><i class="fa-solid fa-house"></i> 導航</a>
                             </div>
                         </div>
                     </div>
@@ -350,59 +429,79 @@
             <div id="day4" class="tab-content hidden fade-in">
                  <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
                     <div class="bg-pink-500 text-white p-4">
-                        <h3 class="text-xl font-bold"><i class="fa-solid fa-cart-shopping mr-2"></i>Day 4: 魚市場、Outlet 與 Costco</h3>
-                         <p class="opacity-90 text-sm mt-1">12/19 (五) | 住宿：糸滿無人島 BBQ 民宿</p>
+                        <h3 class="text-xl font-bold"><i class="fa-solid fa-cart-shopping mr-2"></i>Day 4: 玉泉洞、Outlet 與 Costco</h3>
                     </div>
                     <div class="p-6 space-y-8">
-                        <!-- 09:30 -->
-                        <div class="flex flex-col md:flex-row gap-4 border-l-4 border-blue-200 pl-4">
+                        
+                        <!-- 09:30 玉泉洞 -->
+                        <div class="flex flex-col md:flex-row gap-4 border-l-4 border-orange-500 pl-4">
                             <div class="md:w-1/4 flex flex-col">
                                 <span class="text-2xl font-bold text-okinawa-dark">09:30</span>
-                                <span class="text-gray-500 text-sm">糸滿魚市場</span>
+                                <span class="text-gray-500 text-sm">南城市</span>
                             </div>
                             <div class="md:w-3/4">
-                                <h4 class="text-lg font-bold mb-1">海鮮早餐</h4>
-                                <p class="text-gray-600">民宿附近。購買生魚片、炸蝦、龍蝦味噌湯當早餐。</p>
+                                <h4 class="text-lg font-bold mb-1">玉泉洞 (沖繩世界文化王國)</h4>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Okinawa+World" target="_blank" class="nav-btn"><i class="fa-solid fa-location-arrow"></i> 導航</a>
+                                <p class="text-gray-600 mt-2">壯觀的鐘乳石洞（全年恆溫，室內不淋雨）。</p>
+                                <img src="https://images.unsplash.com/photo-1499244573021-483163359d9c?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=60" class="rounded-lg object-cover w-full h-32 md:h-40 card-shadow mt-2">
                             </div>
                         </div>
 
-                        <!-- 11:00 -->
+                        <!-- 12:00 -->
+                        <div class="flex flex-col md:flex-row gap-4 border-l-4 border-blue-200 pl-4">
+                            <div class="md:w-1/4 flex flex-col"><span class="text-2xl font-bold text-okinawa-dark">12:00</span><span class="text-gray-500 text-sm">糸滿魚市場</span></div>
+                            <div class="md:w-3/4">
+                                <h4 class="text-lg font-bold">海鮮午餐</h4>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Itoman+Fish+Market" target="_blank" class="nav-btn"><i class="fa-solid fa-location-arrow"></i> 導航</a>
+                            </div>
+                        </div>
+
+                        <!-- 13:30 -->
                          <div class="flex flex-col md:flex-row gap-4 border-l-4 border-pink-300 pl-4">
-                            <div class="md:w-1/4 flex flex-col">
-                                <span class="text-2xl font-bold text-okinawa-dark">11:00</span>
-                                <span class="text-gray-500 text-sm">Ashibinaa Outlet</span>
-                            </div>
+                            <div class="md:w-1/4 flex flex-col"><span class="text-2xl font-bold text-okinawa-dark">13:30</span><span class="text-gray-500 text-sm">Outlet</span></div>
                             <div class="md:w-3/4">
-                                <h4 class="text-lg font-bold mb-1">Outlet 購物</h4>
-                                <p class="text-gray-600">購買運動品牌、Gap 童裝、Le Creuset 鍋具等。</p>
+                                <h4 class="text-lg font-bold">Ashibinaa Outlet</h4>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Ashibinaa+Outlet+Mall" target="_blank" class="nav-btn"><i class="fa-solid fa-location-arrow"></i> 導航</a>
                             </div>
                         </div>
 
-                        <!-- 14:30 -->
+                        <!-- 16:00 -->
                         <div class="flex flex-col md:flex-row gap-4 border-l-4 border-red-600 pl-4">
-                            <div class="md:w-1/4 flex flex-col">
-                                <span class="text-2xl font-bold text-okinawa-dark">14:30</span>
-                                <span class="text-gray-500 text-sm">Costco 南城倉庫</span>
-                                <span class="gps-tag">Nanjo City</span>
-                            </div>
+                            <div class="md:w-1/4 flex flex-col"><span class="text-2xl font-bold text-okinawa-dark">16:00</span><span class="text-gray-500 text-sm">Costco</span></div>
                             <div class="md:w-3/4">
-                                <h4 class="text-lg font-bold mb-1">Costco Wholesale (南城店)</h4>
-                                <p class="text-gray-600 mb-2">2024 新開幕！大量採買日本限定零食、生鮮與伴手禮。
-                                    <br><span class="text-xs bg-red-100 text-red-600 px-1 rounded">TIP</span> 記得帶會員卡與保冷袋。
-                                </p>
-                                <img src="https://images.unsplash.com/photo-1533750436402-5e60809b9643?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=60" class="rounded-lg object-cover w-full h-32 md:h-40 card-shadow" alt="Costco Shopping">
+                                <h4 class="text-lg font-bold">Costco 南城倉庫</h4>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Costco+Wholesale+Okinawa+Nanjo" target="_blank" class="nav-btn"><i class="fa-solid fa-location-arrow"></i> 導航</a>
+                                <p class="text-gray-600">室內爆買。</p>
+                                <img src="https://images.unsplash.com/photo-1583258292688-d0213dc5a3a8?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=60" class="rounded-lg object-cover w-full h-32 md:h-40 card-shadow mt-2">
+                            </div>
+                        </div>
+                        
+                        <!-- Day 4 備選行程：浦添大公園 -->
+                        <div class="flex flex-col md:flex-row gap-4 border-l-4 border-gray-300 pl-4 bg-slate-50 p-2 rounded-r sunny-only">
+                            <div class="md:w-1/4 flex flex-col"><span class="text-2xl font-bold text-gray-500">備選</span><span class="text-gray-500 text-sm">浦添市</span></div>
+                            <div class="md:w-3/4">
+                                <h4 class="text-lg font-bold text-gray-700">浦添大公園 <span class="backup-badge">親子推薦</span></h4>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Urasoe+Great+Park" target="_blank" class="nav-btn bg-white border-gray-300 text-gray-600"><i class="fa-solid fa-location-arrow"></i> 導航</a>
+                                <p class="text-gray-600 mt-1 text-sm">著名的超長綠色滾輪溜滑梯（注意：C區遊具區較適合幼兒）。</p>
                             </div>
                         </div>
 
-                        <!-- 18:30 -->
-                        <div class="flex flex-col md:flex-row gap-4 border-l-4 border-purple-600 pl-4">
-                            <div class="md:w-1/4 flex flex-col">
-                                <span class="text-2xl font-bold text-okinawa-dark">18:30</span>
-                                <span class="text-gray-500 text-sm">和平祈念公園</span>
-                            </div>
+                        <!-- 18:30 (晴天) -->
+                        <div class="flex flex-col md:flex-row gap-4 border-l-4 border-purple-600 pl-4 sunny-only">
+                            <div class="md:w-1/4 flex flex-col"><span class="text-2xl font-bold text-okinawa-dark">18:30</span><span class="text-gray-500 text-sm">和平公園</span></div>
                             <div class="md:w-3/4">
-                                <h4 class="text-lg font-bold mb-1">和平燈飾 (可選)</h4>
-                                <p class="text-gray-600">若還有體力，可前往附近的公園看燈飾，或回民宿享受最後一晚 BBQ。</p>
+                                <h4 class="text-lg font-bold">和平燈飾 (戶外)</h4>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Okinawa+Peace+Memorial+Park" target="_blank" class="nav-btn"><i class="fa-solid fa-location-arrow"></i> 導航</a>
+                            </div>
+                        </div>
+
+                        <!-- 18:30 雨備 -->
+                        <div class="flex flex-col md:flex-row gap-4 pl-4 rainy-option">
+                            <div class="md:w-1/4 flex flex-col"><span class="text-2xl font-bold text-slate-500">18:30</span><span class="text-gray-500 text-sm">雨天備案</span></div>
+                            <div class="md:w-3/4">
+                                <h4 class="text-lg font-bold text-slate-600"><i class="fa-solid fa-building mr-2"></i>iias 豐崎 / DMM 水族館</h4>
+                                <a href="https://www.google.com/maps/search/?api=1&query=iias+Okinawa+Toyosaki" target="_blank" class="nav-btn bg-slate-100 text-slate-600 border-slate-300"><i class="fa-solid fa-location-arrow"></i> 導航</a>
+                                <p class="text-gray-600">下雨可改去 iias 商場，或參觀 DMM 水族館。</p>
                             </div>
                         </div>
                     </div>
@@ -414,67 +513,60 @@
                  <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
                     <div class="bg-gray-600 text-white p-4">
                         <h3 class="text-xl font-bold"><i class="fa-solid fa-plane-departure mr-2"></i>Day 5: 鬆餅、還車與賦歸</h3>
-                        <p class="opacity-90 text-sm mt-1">12/20 (六) | 回家囉</p>
                     </div>
                     <div class="p-6 space-y-8">
                          
-                        <!-- 10:00 -->
-                         <div class="flex flex-col md:flex-row gap-4 border-l-4 border-gray-200 pl-4">
-                            <div class="md:w-1/4 flex flex-col">
-                                <span class="text-2xl font-bold text-okinawa-dark">10:00</span>
-                                <span class="text-gray-500 text-sm">糸滿民宿</span>
-                            </div>
+                        <div class="flex flex-col md:flex-row gap-4 border-l-4 border-gray-200 pl-4">
+                            <div class="md:w-1/4 flex flex-col"><span class="text-2xl font-bold text-okinawa-dark">10:00</span><span class="text-gray-500 text-sm">民宿</span></div>
+                            <div class="md:w-3/4"><h4 class="text-lg font-bold">Check-out</h4></div>
+                        </div>
+
+                        <!-- 11:00 (晴天) -->
+                        <div class="flex flex-col md:flex-row gap-4 border-l-4 border-okinawa-teal pl-4 sunny-only">
+                            <div class="md:w-1/4 flex flex-col"><span class="text-2xl font-bold text-okinawa-dark">11:00</span><span class="text-gray-500 text-sm">瀨長島</span></div>
                             <div class="md:w-3/4">
-                                <h4 class="text-lg font-bold mb-1">Check-out</h4>
-                                <p class="text-gray-600">整理 Costco 戰利品，行李裝箱。</p>
+                                <h4 class="text-lg font-bold">幸福鬆餅 (戶外露台)</h4>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Umikaji+Terrace" target="_blank" class="nav-btn"><i class="fa-solid fa-location-arrow"></i> 導航</a>
+                                <img src="https://images.unsplash.com/photo-1528198622811-0842b4e50787?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=60" class="rounded-lg object-cover w-full h-32 md:h-40 card-shadow mt-2">
                             </div>
                         </div>
 
-                        <!-- 11:00 -->
-                        <div class="flex flex-col md:flex-row gap-4 border-l-4 border-okinawa-teal pl-4">
-                            <div class="md:w-1/4 flex flex-col">
-                                <span class="text-2xl font-bold text-okinawa-dark">11:00</span>
-                                <span class="text-gray-500 text-sm">瀨長島</span>
-                            </div>
+                        <!-- 11:00 雨備 -->
+                        <div class="flex flex-col md:flex-row gap-4 pl-4 rainy-option">
+                            <div class="md:w-1/4 flex flex-col"><span class="text-2xl font-bold text-slate-500">11:00</span><span class="text-gray-500 text-sm">雨天備案</span></div>
                             <div class="md:w-3/4">
-                                <h4 class="text-lg font-bold mb-1">幸福鬆餅 (Happy Pancake)</h4>
-                                <p class="text-gray-600 mb-2">Umikaji Terrace 看飛機起降。建議提早線上預約或現場候位。</p>
-                                <img src="https://images.unsplash.com/photo-1565299543923-37dd37887442?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=60" class="rounded-lg object-cover w-full h-32 md:h-40 card-shadow" alt="Pancakes">
+                                <h4 class="text-lg font-bold text-slate-600"><i class="fa-solid fa-utensils mr-2"></i>iias 豐崎室內美食街</h4>
+                                <p class="text-gray-600">直接前往 OTS 旁的 iias 商場用餐，避免淋雨。</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Day 5 備選行程：中城公園 -->
+                        <div class="flex flex-col md:flex-row gap-4 border-l-4 border-gray-300 pl-4 bg-slate-50 p-2 rounded-r sunny-only">
+                            <div class="md:w-1/4 flex flex-col"><span class="text-2xl font-bold text-gray-500">備選</span><span class="text-gray-500 text-sm">北中城村</span></div>
+                            <div class="md:w-3/4">
+                                <h4 class="text-lg font-bold text-gray-700">中城公園 <span class="backup-badge">親子推薦</span></h4>
+                                <a href="https://www.google.com/maps/search/?api=1&query=Nakagusuku+Park" target="_blank" class="nav-btn bg-white border-gray-300 text-gray-600"><i class="fa-solid fa-location-arrow"></i> 導航</a>
+                                <p class="text-gray-600 mt-1 text-sm">擁有巨型彈跳床與多樣遊具，設施非常豐富。</p>
+                                <img src="https://images.unsplash.com/photo-1562916823-3b10b7849c30?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=60" class="rounded-lg object-cover w-full h-24 card-shadow mt-2">
                             </div>
                         </div>
 
-                        <!-- 14:00 -->
                         <div class="flex flex-col md:flex-row gap-4 border-l-4 border-blue-400 pl-4">
-                            <div class="md:w-1/4 flex flex-col">
-                                <span class="text-2xl font-bold text-okinawa-dark">14:00</span>
-                                <span class="text-gray-500 text-sm">iias / DMM</span>
-                            </div>
-                            <div class="md:w-3/4">
-                                <h4 class="text-lg font-bold mb-1">iias 沖繩豐崎 (最後補逛)</h4>
-                                <p class="text-gray-600">就在 OTS 租車處旁邊。有水族館、Loft、超市，適合殺時間。</p>
-                            </div>
+                            <div class="md:w-1/4 flex flex-col"><span class="text-2xl font-bold text-okinawa-dark">14:00</span><span class="text-gray-500 text-sm">iias / DMM</span></div>
+                            <div class="md:w-3/4"><h4 class="text-lg font-bold">iias 沖繩豐崎 (最後補逛)</h4></div>
                         </div>
 
-                        <!-- 17:00 -->
                         <div class="flex flex-col md:flex-row gap-4 border-l-4 border-red-500 pl-4">
-                            <div class="md:w-1/4 flex flex-col">
-                                <span class="text-2xl font-bold text-okinawa-dark">17:00</span>
-                                <span class="text-gray-500 text-sm">OTS 臨空豐崎</span>
-                            </div>
+                            <div class="md:w-1/4 flex flex-col"><span class="text-2xl font-bold text-okinawa-dark">17:00</span><span class="text-gray-500 text-sm">還車</span></div>
                             <div class="md:w-3/4">
-                                <h4 class="text-lg font-bold mb-1">還車 (Car Return)</h4>
-                                <p class="text-gray-600 mb-2">預計 17:00 抵達還車。加滿油、檢查遺留物。搭乘接駁車往機場 (約 20-30 分)。</p>
+                                <h4 class="text-lg font-bold">OTS 還車 & 機場接駁</h4>
+                                <a href="https://www.google.com/maps/search/?api=1&query=OTS+Rent-a-car+Rinku+Toyosaki" target="_blank" class="nav-btn"><i class="fa-solid fa-location-arrow"></i> 導航</a>
                             </div>
                         </div>
 
-                         <!-- Flight Info -->
-                         <div class="flight-card rounded-md mt-4">
+                        <div class="flight-card rounded-md mt-4">
                             <div class="flex justify-between items-center">
-                                <div>
-                                    <span class="font-bold text-okinawa-dark"><i class="fa-solid fa-plane-arrival"></i> BR185 長榮航空</span>
-                                    <div class="text-xs text-gray-600">OKA (19:10) ➔ TPE (20:55)</div>
-                                </div>
-                                <div class="text-right text-xs text-gray-500">國際線航廈</div>
+                                <div><span class="font-bold text-okinawa-dark"><i class="fa-solid fa-plane-arrival"></i> BR185 長榮</span> OKA 19:10 ➔ TPE 20:55</div>
                             </div>
                         </div>
                     </div>
@@ -486,22 +578,19 @@
                 <div class="bg-white rounded-2xl shadow-xl p-6">
                     <h3 class="text-2xl font-bold text-okinawa-dark mb-6 border-b pb-2">🎒 行前/物流清單</h3>
                     
-                    <div class="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                         <h4 class="font-bold text-yellow-800 mb-2"><i class="fa-solid fa-star"></i> 親子自駕重點</h4>
-                         <ul class="list-disc list-inside text-sm text-yellow-900 space-y-1">
-                             <li><strong>兒童座椅：</strong> 取車時務必確認安裝方向正確。</li>
-                             <li><strong>民宿入住：</strong> 兩間民宿均為自助入住，出發前請存好「入住指南」與「密碼」。</li>
-                             <li><strong>Costco：</strong> 會員卡 (台灣卡可用) 與大購物袋。</li>
-                         </ul>
+                    <!-- 必買/購物清單 -->
+                    <div class="mb-6 p-4 bg-pink-50 border border-pink-200 rounded-lg">
+                        <h4 class="font-bold text-pink-700 mb-3"><i class="fa-solid fa-bag-shopping"></i> 必買/購物清單</h4>
+                        <div class="space-y-2" id="checklist-shopping"></div>
                     </div>
 
                     <div class="grid md:grid-cols-2 gap-6">
                         <div>
-                            <h4 class="font-bold text-lg text-okinawa-blue mb-3">📂 重要證件</h4>
+                            <h4 class="font-bold text-lg text-okinawa-blue mb-3">📂 重要證件 & 貴重品</h4>
                             <div class="space-y-2" id="checklist-docs"></div>
                         </div>
                         <div>
-                            <h4 class="font-bold text-lg text-okinawa-blue mb-3">👕 衣物 & 寶寶</h4>
+                            <h4 class="font-bold text-lg text-okinawa-blue mb-3">👕 衣物 & 個人用品</h4>
                             <div class="space-y-2" id="checklist-clothes"></div>
                         </div>
                     </div>
@@ -514,7 +603,6 @@
     <footer class="bg-okinawa-dark text-white py-8 mt-12">
         <div class="container mx-auto px-4 text-center">
             <p class="mb-2">Okinawa Family Trip 2025</p>
-            <p class="text-sm opacity-60">Have a safe flight! ✈️</p>
         </div>
     </footer>
 
@@ -526,16 +614,11 @@
                 b.classList.add('text-gray-500');
                 if(b.id === 'btn-packing') b.classList.add('text-okinawa-dark');
             });
-
             document.getElementById(tabId).classList.remove('hidden');
             const btn = document.getElementById('btn-' + tabId);
             btn.classList.remove('text-gray-500', 'text-okinawa-dark');
-            
-            if(tabId === 'packing') {
-                btn.classList.add('bg-okinawa-teal', 'text-white');
-            } else {
-                btn.classList.add('bg-okinawa-blue', 'text-white');
-            }
+            if(tabId === 'packing') btn.classList.add('bg-okinawa-teal', 'text-white');
+            else btn.classList.add('bg-okinawa-blue', 'text-white');
         }
 
         function showSection(type) {
@@ -545,22 +628,60 @@
 
         function toggleMobileMode() { switchTab('packing'); }
 
+        // --- 天氣切換邏輯 ---
+        let isRainy = false;
+        function toggleWeather() {
+            isRainy = !isRainy;
+            const switchBtn = document.getElementById('weatherSwitch');
+            const icon = document.getElementById('weatherIcon');
+            const body = document.body;
+            
+            if(isRainy) {
+                switchBtn.classList.add('active');
+                icon.classList.remove('fa-sun', 'text-orange-400');
+                icon.classList.add('fa-umbrella', 'text-slate-600');
+                body.classList.add('rain-mode');
+            } else {
+                switchBtn.classList.remove('active');
+                icon.classList.remove('fa-umbrella', 'text-slate-600');
+                icon.classList.add('fa-sun', 'text-orange-400');
+                body.classList.remove('rain-mode');
+            }
+        }
+
         const packingData = {
-            docs: ["護照 (效期6個月+)", "台灣駕照 (正本)", "日文譯本", "Visit Japan Web QR", "民宿入住指南/密碼", "Costco 會員卡"],
-            clothes: ["換洗衣物", "薄外套/防風", "寶寶尿布/奶粉", "寶寶常備藥", "推車/背巾", "泳衣 (民宿有泳池)"]
+            shopping: [
+                "消炎眼藥水", 
+                "門擋", 
+                "禮物", 
+                { text: "毛神", indent: true }, 
+                { text: "公司同事", indent: true }
+            ],
+            docs: ["護照 (效期6個月+)", "台灣駕照 (正本)", "日文譯本", "Visit Japan Web QR", "民宿入住指南/密碼", "Costco 會員卡", "日幣現金", "iPad Pro", "充電線 (手機/iPad)"],
+            clothes: ["換洗衣物", "薄外套/防風", "太陽眼鏡", "洗面乳", "牙線", "寶寶尿布/奶粉", "寶寶常備藥", "推車/背巾", "泳衣 (民宿有泳池)", "雨具/折疊傘"]
         };
 
         function initChecklist() {
-            const saved = JSON.parse(localStorage.getItem('okinawa_list_2025')) || {};
+            // 更新 key 為 v3 以避免舊資料衝突
+            const saved = JSON.parse(localStorage.getItem('okinawa_list_2025_v3')) || {};
+            
             for (const [cat, items] of Object.entries(packingData)) {
                 const el = document.getElementById(`checklist-${cat}`);
                 if(!el) continue;
+                
                 items.forEach((item, i) => {
+                    // 處理物件型態 (縮排用)
+                    const isObj = typeof item === 'object';
+                    const labelText = isObj ? item.text : item;
+                    const indentClass = (isObj && item.indent) ? 'ml-8 border-l-4 border-pink-200 pl-2' : '';
+                    
                     const id = `${cat}-${i}`;
+                    const checked = saved[id] ? 'checked' : '';
+                    
                     el.innerHTML += `
-                        <label class="flex items-center space-x-3 cursor-pointer p-2 hover:bg-gray-50 rounded transition">
-                            <input type="checkbox" id="${id}" ${saved[id]?'checked':''} onchange="saveList()" class="form-checkbox h-5 w-5 text-okinawa-teal rounded border-gray-300">
-                            <span class="text-gray-700">${item}</span>
+                        <label class="flex items-center space-x-3 cursor-pointer p-2 hover:bg-gray-50 rounded transition ${indentClass}">
+                            <input type="checkbox" id="${id}" ${checked} onchange="saveList()" class="form-checkbox h-5 w-5 text-okinawa-teal rounded border-gray-300">
+                            <span class="text-gray-700">${labelText}</span>
                         </label>`;
                 });
             }
@@ -569,9 +690,8 @@
         function saveList() {
             const state = {};
             document.querySelectorAll('input[type="checkbox"]').forEach(cb => state[cb.id] = cb.checked);
-            localStorage.setItem('okinawa_list_2025', JSON.stringify(state));
+            localStorage.setItem('okinawa_list_2025_v3', JSON.stringify(state));
         }
-
         document.addEventListener('DOMContentLoaded', initChecklist);
     </script>
 </body>
