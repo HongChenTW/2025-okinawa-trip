@@ -588,13 +588,28 @@
                     </div>
 
                     <div class="grid md:grid-cols-2 gap-6">
-                        <div>
-                            <h4 class="font-bold text-lg text-okinawa-blue mb-3">📂 重要證件 & 貴重品</h4>
-                            <div class="space-y-2" id="checklist-docs"></div>
+                        <!-- Left Column -->
+                        <div class="space-y-6">
+                            <div>
+                                <h4 class="font-bold text-lg text-okinawa-blue mb-3">📂 重要證件</h4>
+                                <div class="space-y-2" id="checklist-docs"></div>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-lg text-okinawa-blue mb-3">👨👩 大人用品</h4>
+                                <div class="space-y-2" id="checklist-adults"></div>
+                            </div>
                         </div>
-                        <div>
-                            <h4 class="font-bold text-lg text-okinawa-blue mb-3">👕 衣物 & 個人用品</h4>
-                            <div class="space-y-2" id="checklist-clothes"></div>
+
+                        <!-- Right Column -->
+                        <div class="space-y-6">
+                            <div>
+                                <h4 class="font-bold text-lg text-okinawa-blue mb-3">🧳 小孩用品 (行李箱)</h4>
+                                <div class="space-y-2" id="checklist-kids_suitcase"></div>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-lg text-okinawa-blue mb-3">👜 小孩用品 (隨身)</h4>
+                                <div class="space-y-2" id="checklist-kids_carryon"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -660,13 +675,15 @@
                 { text: "毛神", indent: true }, 
                 { text: "公司同事", indent: true }
             ],
-            docs: ["護照 (效期6個月+)", "台灣駕照 (正本)", "日文譯本", "Visit Japan Web QR", "民宿入住指南/密碼", "Costco 會員卡", "日幣現金", "iPad Pro", "充電線 (手機/iPad)"],
-            clothes: ["換洗衣物", "薄外套/防風", "太陽眼鏡", "洗面乳", "牙線", "寶寶尿布/奶粉", "寶寶常備藥", "推車/背巾", "泳衣 (民宿有泳池)", "雨具/折疊傘"]
+            docs: ["護照", "台灣駕照（正本）", "駕照日文譯本（正本）", "Visit Japan Web QR code"],
+            kids_suitcase: ["換洗衣物", "薄外套", "奶嘴", "濕紙巾", "被被", "尿布", "奶粉", "常備藥", "推車", "兒童耳機", "碗筷組", "保溫瓶", "零食"],
+            kids_carryon: ["薄外套", "奶嘴", "濕紙巾", "尿布", "奶粉", "常備藥", "兒童耳機", "碗筷組", "零食"],
+            adults: ["換洗衣物", "洗面乳", "牙線", "太陽眼鏡", "iPad Pro", "costco 會員卡", "日幣現金", "充電線（手機、iPad）", "行動電源"]
         };
 
         function initChecklist() {
-            // 更新 key 為 v3 以避免舊資料衝突
-            const saved = JSON.parse(localStorage.getItem('okinawa_list_2025_v3')) || {};
+            // 更新 key 為 v4 以避免舊資料衝突
+            const saved = JSON.parse(localStorage.getItem('okinawa_list_2025_v4')) || {};
             
             for (const [cat, items] of Object.entries(packingData)) {
                 const el = document.getElementById(`checklist-${cat}`);
@@ -693,7 +710,7 @@
         function saveList() {
             const state = {};
             document.querySelectorAll('input[type="checkbox"]').forEach(cb => state[cb.id] = cb.checked);
-            localStorage.setItem('okinawa_list_2025_v3', JSON.stringify(state));
+            localStorage.setItem('okinawa_list_2025_v4', JSON.stringify(state));
         }
         document.addEventListener('DOMContentLoaded', initChecklist);
     </script>
